@@ -6,7 +6,9 @@ export enum DesignType {
 }
 
 export interface DesignConfig {
-  laneWidth: number;
+  l1Width: number;
+  l2Width: number;
+  l3Width: number;
   medianWidth: number;
   trafficSpeed: number;
   uTurnType: DesignType;

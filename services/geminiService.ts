@@ -6,18 +6,21 @@ export const generateTrafficProposal = async (config: DesignConfig) => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
   const prompt = `
-    Analyze a 6-lane urban arterial (3+3) focused on ZERO OBSTRUCTION to through-traffic:
-    - Problem Statement: U-turning vehicles often encroach into outer lanes (L2, L3), causing traffic bottlenecks.
-    - Solution: A dedicated 7m wide U-turn canal in Lane 1 with a solid high-visibility divider (Yellow/Red) separating it from Lane 2.
-    - Lane 2 and 3 are designated as "EXPRESS THROUGH LANES" and are physically/visually protected from turning encroachment.
-    - Ellipse Dimensions: 64m Major Axis and 28m Minor Axis transition strictly contained in the 7m canal.
-    - Traffic Dynamics: Through traffic in L2 and L3 maintains high velocity (60km/h+) while L1 turns occur independently.
+    Analyze an 8-lane urban arterial (4+4 or equivalent) with focus on ZERO OBSTRUCTION to through-traffic using these specific user-defined parameters:
+    - L1 Width (U-Turn Canal): ${config.l1Width}m
+    - L2 Width (Express): ${config.l2Width}m
+    - L3 Width (Express): ${config.l3Width}m
+    - Median Width: ${config.medianWidth}m
+    - Target Flow Speed: ${config.trafficSpeed} km/h
+    
+    Problem Statement: U-turning vehicles often encroach into outer lanes (L2, L3), causing bottlenecks.
+    Solution: A dedicated L1 canal with a solid high-visibility divider separating it from L2.
     
     The proposal MUST address:
-    1. Through-Lane Protection: The specific engineering design that ensures L2 and L3 traffic is never forced to brake or swerve for U-turners.
-    2. Segregation Mechanism: How the 7m wide L1 zone and solid dividers eliminate lane overlap during the 28m minor axis sweep.
-    3. Bus Turn Radius: Verification that a light-blue heavy bus can complete the turn within the 7m width without entering L2.
-    4. IRC Protocol: Compliance with IRC:SP:41 guidelines for segregated median turn-arounds.
+    1. Width Sufficiency: Given the L1 width of ${config.l1Width}m, evaluate if heavy vehicles (buses) can complete a 64m/28m elliptical turn without hitting L2 buffers.
+    2. Speed-Lane Relationship: How the through-lanes (L2=${config.l2Width}m, L3=${config.l3Width}m) support the target speed of ${config.trafficSpeed}km/h.
+    3. Segregation Effectiveness: Evaluate the median (${config.medianWidth}m) and divider impact on safety score.
+    4. IRC Protocol: Compliance with IRC guidelines for segregated median turn-arounds.
   `;
 
   try {
@@ -40,7 +43,7 @@ export const generateTrafficProposal = async (config: DesignConfig) => {
 export const generateUturnVideo = async (config: DesignConfig) => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
-  const prompt = `A 4K professional traffic simulation. A highway with 3 lanes per side. Lane 1 is a dedicated U-turn canal with a bold yellow barrier separating it from Lane 2. Large LIGHT BLUE buses are making U-turns within Lane 1. Fast cars are zooming uninterrupted through Lanes 2 and 3 (Express Through Lanes). There is zero braking in the outer lanes. High-contrast road markings and architectural flyover-style lighting.`;
+  const prompt = `A 4K professional traffic simulation. A highway with multiple lanes. Lane 1 is a dedicated ${config.l1Width}m wide U-turn canal with a bold yellow barrier. Large LIGHT BLUE buses are making U-turns within Lane 1 at ${config.trafficSpeed/2}km/h. Fast cars are zooming uninterrupted through outer lanes (each ${config.l2Width}m wide). Architectural flyover-style lighting, high-contrast road markings.`;
 
   try {
     let operation = await ai.models.generateVideos({

@@ -12,7 +12,8 @@ import {
   TrendingUp,
   Construction,
   LayoutGrid,
-  Zap
+  Zap,
+  Sliders
 } from 'lucide-react';
 import { DesignType, DesignConfig, TrafficStats } from './types';
 import { RoadCanvas } from './components/RoadCanvas';
@@ -30,7 +31,9 @@ declare global {
 
 const App: React.FC = () => {
   const [config, setConfig] = useState<DesignConfig>({
-    laneWidth: 3.5,
+    l1Width: 7.0,
+    l2Width: 3.5,
+    l3Width: 3.5,
     medianWidth: 2.0, 
     trafficSpeed: 60, 
     uTurnType: DesignType.MEDIAN_POCKET
@@ -57,6 +60,20 @@ const App: React.FC = () => {
     checkKey();
   }, []);
 
+  // Recalculate stats based on lane configuration
+  useEffect(() => {
+    const baseThroughput = 2000;
+    const l2l3Impact = (config.l2Width + config.l3Width) * 500;
+    const speedImpact = config.trafficSpeed * 15;
+    const safety = config.l1Width >= 7.0 ? 99.9 : 92.5 + (config.l1Width / 1.5);
+
+    setStats({
+      throughput: Math.round(baseThroughput + l2l3Impact + speedImpact),
+      safetyScore: Number(safety.toFixed(1)),
+      costEstimate: `₹${(5 + config.l1Width * 0.5 + (config.l2Width + config.l3Width) * 0.3).toFixed(1)}Cr - ₹${(8 + config.l1Width * 0.6 + (config.l2Width + config.l3Width) * 0.4).toFixed(1)}Cr`
+    });
+  }, [config]);
+
   const handleGenerateProposal = async () => {
     setIsGenerating(true);
     setProposal(null);
@@ -82,6 +99,10 @@ const App: React.FC = () => {
     } finally {
       setIsVideoGenerating(false);
     }
+  };
+
+  const updateConfig = (key: keyof DesignConfig, value: number | string) => {
+    setConfig(prev => ({ ...prev, [key]: value }));
   };
 
   return (
@@ -118,11 +139,11 @@ const App: React.FC = () => {
           <div className="flex items-center justify-between px-2">
             <h2 className="text-2xl font-black text-slate-900 tracking-tighter uppercase flex items-center gap-3">
               <ShieldAlert className="text-red-500" size={24} />
-              7m Segregated U-Turn Canal
+              Dynamic Lane Control Analysis
             </h2>
             <div className="flex gap-2">
-              <span className="bg-red-100 text-red-700 text-[10px] font-black px-3 py-1.5 rounded-full border border-red-200 uppercase tracking-widest">No Obstruction</span>
-              <span className="bg-blue-100 text-blue-700 text-[10px] font-black px-3 py-1.5 rounded-full border border-blue-200 uppercase tracking-widest">L2/L3 Express Flow</span>
+              <span className="bg-red-100 text-red-700 text-[10px] font-black px-3 py-1.5 rounded-full border border-red-200 uppercase tracking-widest">Adaptive Widths</span>
+              <span className="bg-blue-100 text-blue-700 text-[10px] font-black px-3 py-1.5 rounded-full border border-blue-200 uppercase tracking-widest">Express Flow</span>
             </div>
           </div>
           <div className="shadow-2xl rounded-[2.5rem] overflow-hidden bg-slate-900 border-4 border-white">
@@ -133,27 +154,76 @@ const App: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           <div className="lg:col-span-5 bg-white p-8 rounded-[2rem] shadow-sm border border-slate-200">
             <div className="flex items-center gap-2 mb-8 border-b border-slate-100 pb-5">
-              <Settings2 size={18} className="text-yellow-600" />
-              <h2 className="font-black text-slate-800 uppercase tracking-widest text-xs">Anti-Obstruction Protocol</h2>
+              <Sliders size={18} className="text-yellow-600" />
+              <h2 className="font-black text-slate-800 uppercase tracking-widest text-xs">Geometric Parameters</h2>
             </div>
 
-            <div className="space-y-6">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                   <span className="text-[9px] font-black text-slate-400 uppercase block mb-1">U-Turn Canal</span>
-                   <span className="text-xl font-black text-yellow-600">7.0m Width</span>
+            <div className="space-y-8">
+              {/* Lane Controls */}
+              <div className="space-y-6">
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <label className="text-[10px] font-black text-slate-500 uppercase">L1 Width (U-Turn Canal)</label>
+                    <span className="text-sm font-bold text-yellow-600">{config.l1Width}m</span>
+                  </div>
+                  <input 
+                    type="range" min="3.5" max="12" step="0.5" 
+                    value={config.l1Width}
+                    onChange={(e) => updateConfig('l1Width', parseFloat(e.target.value))}
+                    className="w-full h-1.5 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-yellow-500"
+                  />
                 </div>
-                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                   <span className="text-[9px] font-black text-slate-400 uppercase block mb-1">Through Lanes</span>
-                   <span className="text-xl font-black text-blue-600">Protected</span>
+
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <label className="text-[10px] font-black text-slate-500 uppercase">L2 Width (Express)</label>
+                    <span className="text-sm font-bold text-slate-900">{config.l2Width}m</span>
+                  </div>
+                  <input 
+                    type="range" min="3.0" max="5" step="0.1" 
+                    value={config.l2Width}
+                    onChange={(e) => updateConfig('l2Width', parseFloat(e.target.value))}
+                    className="w-full h-1.5 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-slate-600"
+                  />
                 </div>
-                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                   <span className="text-[9px] font-black text-slate-400 uppercase block mb-1">Divider Type</span>
-                   <span className="text-xl font-black text-slate-900 text-red-500">Solid Curb</span>
+
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <label className="text-[10px] font-black text-slate-500 uppercase">L3 Width (Express)</label>
+                    <span className="text-sm font-bold text-slate-900">{config.l3Width}m</span>
+                  </div>
+                  <input 
+                    type="range" min="3.0" max="5" step="0.1" 
+                    value={config.l3Width}
+                    onChange={(e) => updateConfig('l3Width', parseFloat(e.target.value))}
+                    className="w-full h-1.5 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-slate-600"
+                  />
                 </div>
-                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                   <span className="text-[9px] font-black text-slate-400 uppercase block mb-1">PCU Impact</span>
-                   <span className="text-xl font-black text-slate-900">Zero</span>
+
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <label className="text-[10px] font-black text-slate-500 uppercase">Median Width</label>
+                    <span className="text-sm font-bold text-slate-900">{config.medianWidth}m</span>
+                  </div>
+                  <input 
+                    type="range" min="1.0" max="6" step="0.5" 
+                    value={config.medianWidth}
+                    onChange={(e) => updateConfig('medianWidth', parseFloat(e.target.value))}
+                    className="w-full h-1.5 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-slate-900"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <label className="text-[10px] font-black text-slate-500 uppercase">Simulation Speed</label>
+                    <span className="text-sm font-bold text-blue-600">{config.trafficSpeed} km/h</span>
+                  </div>
+                  <input 
+                    type="range" min="20" max="100" step="5" 
+                    value={config.trafficSpeed}
+                    onChange={(e) => updateConfig('trafficSpeed', parseFloat(e.target.value))}
+                    className="w-full h-1.5 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                  />
                 </div>
               </div>
 
@@ -161,8 +231,10 @@ const App: React.FC = () => {
                 <div className="flex items-start gap-4">
                   <div className="p-2 bg-white rounded-xl shadow-sm"><Construction className="text-red-600" size={18} /></div>
                   <div>
-                    <h4 className="text-[10px] font-black text-slate-800 uppercase mb-1">Enforced Segregation</h4>
-                    <p className="text-[11px] text-slate-500">The 7m L1 zone acts as a dedicated canal. A solid yellow divider prevents U-turning vehicles from swinging into L2 or L3 lanes.</p>
+                    <h4 className="text-[10px] font-black text-slate-800 uppercase mb-1">Impact Summary</h4>
+                    <p className="text-[11px] text-slate-500">
+                      Current L1 width of {config.l1Width}m {config.l1Width >= 7 ? 'safely contains' : 'may restrict'} heavy vehicle turning arcs without L2 obstruction.
+                    </p>
                   </div>
                 </div>
               </div>
@@ -184,25 +256,25 @@ const App: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 flex flex-col items-center justify-center text-center border-b-4 border-b-blue-500">
                 <TrendingUp className="text-blue-500 mb-2" size={24} />
-                <span className="text-[10px] font-black text-slate-400 uppercase mb-1">Express Speed</span>
-                <span className="text-2xl font-black text-slate-900">60+ <span className="text-xs font-medium text-slate-400">km/h</span></span>
+                <span className="text-[10px] font-black text-slate-400 uppercase mb-1">PCU Throughput</span>
+                <span className="text-2xl font-black text-slate-900">{stats.throughput} <span className="text-xs font-medium text-slate-400">/hr</span></span>
               </div>
               <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 flex flex-col items-center justify-center text-center border-b-4 border-b-emerald-500">
                 <ShieldCheck className="text-yellow-500 mb-2" size={24} />
-                <span className="text-[10px] font-black text-slate-400 uppercase mb-1">Isolation Score</span>
-                <span className="text-2xl font-black text-emerald-500">100%</span>
+                <span className="text-[10px] font-black text-slate-400 uppercase mb-1">Safety Score</span>
+                <span className="text-2xl font-black text-emerald-500">{stats.safetyScore}%</span>
               </div>
               <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 flex flex-col items-center justify-center text-center border-b-4 border-b-red-500">
                 <ArrowRightLeft className="text-blue-500 mb-2" size={24} />
-                <span className="text-[10px] font-black text-slate-400 uppercase mb-1">Conflict Zone</span>
-                <span className="text-2xl font-black text-red-500">NONE</span>
+                <span className="text-[10px] font-black text-slate-400 uppercase mb-1">Cost Projection</span>
+                <span className="text-lg font-black text-red-500">{stats.costEstimate}</span>
               </div>
             </div>
 
             {proposal && (
               <section className="bg-white rounded-[2rem] shadow-sm border border-slate-200 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-700">
                 <div className="p-1 bg-red-700 flex items-center justify-between px-8 py-3">
-                  <span className="text-[10px] font-black text-white uppercase tracking-widest">Flow Integrity Analysis [v10.0]</span>
+                  <span className="text-[10px] font-black text-white uppercase tracking-widest">Flow Integrity Analysis [v11.0]</span>
                   <Construction className="text-white/50" size={14} />
                 </div>
                 <div className="p-10 prose prose-slate max-w-none">
@@ -217,7 +289,7 @@ const App: React.FC = () => {
       </main>
 
       <footer className="mt-auto py-8 text-center text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] border-t border-slate-200">
-        UrbanTurn High-Capacity Suite &copy; 2025 | Zero-Obstruction Protocol
+        UrbanTurn Dynamic Suite &copy; 2025 | Zero-Obstruction Protocol
       </footer>
     </div>
   );
