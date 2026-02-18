@@ -1,0 +1,5 @@
+{
+  "name": "UrbanTurn - 8-Lane Traffic Optimizer",
+  "description": "A professional traffic engineering tool for designing non-obstructive U-turns on 8-lane highways following IRC guidelines, featuring AI-powered proposal generation and interactive visualizers.",
+  "requestFramePermissions": []
+}
